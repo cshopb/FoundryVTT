@@ -10,10 +10,8 @@ function createTableResults(data) {
         values,
         (tableResultText, index) => {
             let [min, max] = ranges[index].split('-');
-            console.dir(min);
-            console.dir(max);
 
-            if(max === '00') {
+            if (max === '00') {
                 max = '100';
             }
 
@@ -33,14 +31,16 @@ function createTableResults(data) {
     return tableResults;
 }
 
-async function createRollTable(data, name, formula) {
+async function createRollTable(data, name, formula = null) {
     name = _.startCase(_.camelCase(name));
-
-    name = 'Site Name: Place-' + name;
 
     const rollTable = await RollTable.create({ name });
 
     const results = createTableResults(data);
+
+    if (!formula) {
+        formula = '1d' + _.last(results).range[1];
+    }
 
     const json = {
         name,
@@ -54,31 +54,32 @@ async function createRollTable(data, name, formula) {
 new Dialog({
     title: 'Create Roll Table',
     content: `
-    <form>
-        <div class="form-group">
-            <div>
-                <label>Name of the Table</label>
-                <input type='text' name='tableName'></input>
-            </div>
-            <div>
-                <label>Dice size</label>
-                <input type='text' name='diceFormula'></input>
-            </div>
-            <div>
-                <label>Table from Rulebook</label>
-                <textarea name='tableData'></textarea>
-            </div>
-        </div>
-    </form>`,
+    <div>
+        <label for="tableName">Name of the Table</label>
+        <input id="tableName" type="text" name="tableName"></input>
+    </div>
+    <div>
+        <label for="diceFormula">Dice formula</label>
+        <input id="diceFormula" type="text" name="diceFormula"></input>
+    </div>
+    <div>
+        <label for="tableData">Table from Rulebook</label>
+        <textarea
+            id="tableData"
+            name="tableData"
+            rows="10"
+            style="resize:none"
+        ></textarea>
+    </div>`,
     buttons: {
         yes: {
-            icon: "<i class='fas fa-check'></i>",
-            label: `Apply Changes`,
+            icon: '<i class="fas fa-check"></i>',
+            label: 'Apply Changes',
             callback: (html) => {
-                const tableName = html.find("input[name='tableName']").val() || 'TempName';
-                const diceFormula = html.find("input[name='diceFormula']").val() || 100;
-                const tableData = html.find("textarea[name='tableData']").val();
-        
+                const tableName = html.find('input[name="tableName"]').val() || 'TempName';
+                const diceFormula = html.find('input[name="diceFormula"]').val();
+                const tableData = html.find('textarea[name="tableData"]').val();
+
                 createRollTable(tableData, tableName, diceFormula);
             }
         }
