@@ -125,16 +125,16 @@ function image(data) {
  *
  * @param {Actor} actor 
  */
-function printLocation(actor) {
+function printSite(actor) {
     const img = image(actor);
 
     printMessage(img + ' ' + actor.link);
 }
 
 /**
- * Retutns the date of the item with the requested name.
+ * Retutns the data of the Item with the requested name.
  *
- * @param {String} name Name of the item.
+ * @param {String} name Name of the Item.
  *
  * @returns Object
  */
@@ -177,36 +177,61 @@ async function generateSiteName(domainName) {
     return name;
 }
 
+async function saveSite(site) {
+    const actor = await Actor.create(
+        {
+            name: site.name,
+            type: 'site',
+            img: site.domain.icon,
+            items: [
+                itemData(site.theme.data.text),
+                itemData(site.domain.data.text)
+            ]
+        }
+    );
+
+    printSite(actor);
+}
+
 /**
  * Generates a Delve Site.
  *
  * @param {String} domainName
  */
 async function generateSite(domainName) {
-    let domain = {};
+    let site = {};
 
     if (domainName === 'Random') {
-        domain = await rollOnTable(tableNames.domain);
+        site.domain = await rollOnTable(tableNames.domain);
     } else {
-        domain = getSpecificTableResult(tableNames.domain, domainName);
+        site.domain = getSpecificTableResult(tableNames.domain, domainName);
     }
 
-    const theme = await rollOnTable(tableNames.theme);
-    const name = await generateSiteName(domain.data.text);
+    site.theme = await rollOnTable(tableNames.theme);
+    site.name = await generateSiteName(site.domain.data.text);
 
-    const actor = await Actor.create(
+    printMessage(`<strong>${site.name}:</strong> ${site.theme.data.text} ${site.domain.data.text}`);
+
+    new Dialog(
         {
-            name,
-            'type': 'site',
-            'img': domain.icon,
-            'items': [
-                itemData(theme.data.text),
-                itemData(domain.data.text)
-            ]
+            title: 'Save Site',
+            content: 'Should the Site be saved in Actors',
+            buttons: {
+                yes: {
+                    icon: '<i class="fas fa-save"></i>',
+                    label: 'Save Site',
+                    callback: () => {
+                        saveSite(site);
+                    }
+                },
+                no: {
+                    icon: '<i class="fas fa-ban"></i>',
+                    label: 'Cancel'
+                },
+            },
+            default: 'yes'
         }
-    );
-
-    printLocation(actor);
+    ).render(true);
 }
 
 const tableNames = {
@@ -221,26 +246,28 @@ const gm = game
     .filter(u => u.isGM)
     .map(u => u._id);
 
-new Dialog({
-    title: 'Create Roll Table',
-    content: selectBox(
-        'Select Domain',
-        [
-            'Random',
-            ...getTableResultTexts(tableNames.domain)
-        ],
-        'domain'
-    ),
-    buttons: {
-        yes: {
-            icon: '<i class="fas fa-check"></i>',
-            label: 'Apply Changes',
-            callback: () => {
-                const tableName = document.querySelector('#domain').value;
+new Dialog(
+    {
+        title: 'Generate Delve Site',
+        content: selectBox(
+            'Select Domain',
+            [
+                'Random',
+                ...getTableResultTexts(tableNames.domain)
+            ],
+            'domain'
+        ),
+        buttons: {
+            yes: {
+                icon: '<i class="fas fa-check"></i>',
+                label: 'Generate Site',
+                callback: () => {
+                    const tableName = document.querySelector('#domain').value;
 
-                generateSite(tableName);
+                    generateSite(tableName);
+                }
             }
-        }
-    },
-    defaultYes: false
-}).render(true);
+        },
+        defaultYes: false
+    }
+).render(true);
