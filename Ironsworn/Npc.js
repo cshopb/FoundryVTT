@@ -1,13 +1,42 @@
 // CONFIG.debug.hooks = true;
 
-async function rollOnTable(tableName) {
-    console.dir(tableName);
-    const { results } = await game
+/**
+ * Returns a RollTable with the requested name.
+ *
+ * @param {String} tableName 
+ *
+ * @returns RollTable
+ */
+function findTable(tableName) {
+    return game
         .tables
-        .find(t => t.name === tableName)
-        .roll();
+        .find(t => t.name === tableName);
+}
 
-    return results[0].data.text;
+/**
+ * Rolls on a table and returns the rolled result text.
+ *
+ * @param {RollTable} rollTable
+ *
+ * @returns RollTableResult
+ */
+async function rollOnTable(rollTable, firstRoll = true) {
+    const { results } = await rollTable.roll();
+
+    let result = results[0].data.text;
+
+    if (_.camelCase(result) === 'rollTwice') {
+        const firstGoal = await rollOnTable(rollTable, false);
+        const secondGoal = await rollOnTable(rollTable, false);
+
+        result = `${firstGoal} and ${secondGoal}`;
+
+        if (firstRoll === false) {
+            result = ' and' + result;
+        }
+    }
+
+    return result;
 }
 
 function printMessage(message) {
@@ -38,29 +67,100 @@ function image({ data }) {
     return `<img src="${data.img}" alt="${data.text}" width="${side}" height="${side}">`
 }
 
-function printNpc(npc) {
-    let pronoun = npc.gender === 'M' ? 'His' : 'Her';
+function npcHtml(npc) {
+    const pronoun = npc.gender === 'M' ? 'His' : 'Her';
 
-    let message = `<h2>${npc.name}</h2>`;
-    message += `<em>${npc.difficulty}</em>`;
-    message += '<hr>';
-    message += `<p>${npc.name} is a ${npc.difficulty} ${npc.description} ${npc.role}. ${pronoun} current goal is to ${npc.goal}. ${pronoun} current stance toward you is ${npc.disposition}</p>`;
+    const strong = (string) => {
+        return `<strong>${string}</strong>`;
+    }
 
-    printMessage(message);
+    const startsWithVowel = function (word) {
+        return ['a', 'e', 'i', 'o', 'u'].some(
+            (vowel) => {
+                word = _.lowerCase(word);
+
+                return word.startsWith(vowel);
+            }
+        );
+    };
+
+    const descriptonString = (descripton) => {
+        let a = 'a';
+
+        if (startsWithVowel(descripton) === true) {
+            a = 'an';
+        }
+
+        return `${a} ${strong(descripton)}`;
+    }
+
+    return `
+        <h1>
+            ${npc.name}
+        </h1>
+        <p>
+            <em>
+                ${npc.difficulty} <small>(${npc.gender})</small>
+            </em>
+        </p>
+        <br>
+        <h3>Initial Description:</h3>
+        <p>
+            ${strong(npc.name)} is ${descriptonString(npc.description)} ${strong(npc.role)}.
+            ${pronoun} current goal is to ${strong(npc.goal)}.
+            ${pronoun} current stance toward you is ${strong(npc.disposition)}
+        </p>
+        <hr>
+    `;
+}
+
+function saveNpc(npc) {
+    JournalEntry.create(
+        {
+            name: npc.name,
+            content: npcHtml(npc)
+        }
+    );
 }
 
 async function generateNpc() {
     const npc = {};
 
-    npc.name = await rollOnTable('Oracle: Ironlander Names');
-    npc.difficulty = await rollOnTable('Character Difficulty');
-    npc.description = await rollOnTable('Oracle: Character Descriptor');
-    npc.role = await rollOnTable('Oracle: Character Role');
-    npc.goal = await rollOnTable('Oracle: Character Goal');
-    npc.disposition = await rollOnTable('Oracle: Character Disposition');
-    npc.gender = _.sample(['M', 'F']);
+    npc.name = await rollOnTable(findTable('Oracle: Ironlander Names'));
+    npc.difficulty = await rollOnTable(findTable('Character Difficulty'));
+    npc.description = await rollOnTable(findTable('Oracle: Character Descriptor'));
+    npc.role = await rollOnTable(findTable('Oracle: Character Role'));
+    npc.goal = await rollOnTable(findTable('Oracle: Character Goal'));
+    npc.disposition = await rollOnTable(findTable('Oracle: Character Disposition'));
+    npc.gender = _.sample(
+        [
+            'M',
+            'F'
+        ]
+    );
 
-    printNpc(npc);
+    printMessage(npcHtml(npc));
+
+    new Dialog(
+        {
+            title: 'Save NPC to Journal',
+            content: 'Should the NPC be saved in Journal',
+            buttons: {
+                yes: {
+                    icon: '<i class="fas fa-save"></i>',
+                    label: 'Save NPC',
+                    callback: () => {
+                        saveNpc(npc);
+                    }
+                },
+                no: {
+                    icon: '<i class="fas fa-ban"></i>',
+                    label: 'Cancel'
+                },
+            },
+            default: 'yes'
+        }
+    ).render(true);
 }
 
 generateNpc();
