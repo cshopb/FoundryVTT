@@ -17,6 +17,7 @@ function findTable(tableName) {
  * Rolls on a table and returns the rolled result text.
  *
  * @param {RollTable} rollTable
+ * @param {Boolean} firstRoll If it is not the first roll add the `and` infront of the result.
  *
  * @returns RollTableResult
  */
@@ -144,7 +145,7 @@ async function generateNpc() {
     new Dialog(
         {
             title: 'Save NPC to Journal',
-            content: 'Should the NPC be saved in Journal',
+            content: `Should ${npc.name} be saved in Journal`,
             buttons: {
                 yes: {
                     icon: '<i class="fas fa-save"></i>',

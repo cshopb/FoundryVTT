@@ -1,64 +1,9 @@
-const data = [
-    'Deep',
-    'Tainted',
-    'Grey',
-    'Forgotten',
-    'Flooded',
-    'Forbidden',
-    'Barren',
-    'Lost',
-    'Cursed',
-    'Fell',
-    'Sunken',
-    'Nightmare',
-    'Infernal',
-    'Dark',
-    'Bloodstained',
-    'Haunted',
-    'White',
-    'Shrouded',
-    'Wasted',
-    'Grim',
-    'Endless',
-    'Crumbling',
-    'Undying',
-    'Bloodied',
-    'Forsaken',
-    'Silent',
-    'Blighted',
-    'Iron',
-    'Frozen',
-    'Abyssal',
-    'Crimson',
-    'Silver',
-    'Desecrated',
-    'Ashen',
-    'Elder',
-    'Scorched',
-    'Unknown',
-    'Scarred',
-    'Broken',
-    'Chaotic',
-    'Black',
-    'Hidden',
-    'Sundered',
-    'Shattered',
-    'Dreaded',
-    'Secret',
-    'High',
-    'Sacred',
-    'Fallen',
-    'Ruined',
-];
-
 function createTableResults(data, rangeMultiplyer) {
     const maxRange = function (currentIndex) {
-        currentIndex++;
         return currentIndex * rangeMultiplyer;
     }
 
     const minRange = function (currentIndex) {
-        currentIndex++;
         return (currentIndex * rangeMultiplyer) - (rangeMultiplyer - 1);
     }
 
@@ -67,12 +12,13 @@ function createTableResults(data, rangeMultiplyer) {
     _.forEach(
         data,
         (tableResultText, index) => {
+            const currentIndex = index + 1;
 
             const tableResult = {
                 text: tableResultText,
                 range: [
-                    minRange(index),
-                    maxRange(index)
+                    minRange(currentIndex),
+                    maxRange(currentIndex)
                 ],
                 weight: 1
             }
@@ -84,6 +30,14 @@ function createTableResults(data, rangeMultiplyer) {
     return tableResults;
 }
 
+/**
+ * Create Roll Table from array.
+ *
+ * @param {Array} data Data for the table
+ * @param {String} name Name of the table
+ * @param {Number} rangeMultiplyer How many values on the die shall be added to one option.
+ *                                 I.e. if 3 than the first option on the table will go from 1-3.
+ */
 async function createRollTable(data, name, rangeMultiplyer) {
     const formula = '1d' + (data.length * rangeMultiplyer);
 
@@ -104,4 +58,50 @@ async function createRollTable(data, name, rangeMultiplyer) {
     rollTable.importFromJSON(JSON.stringify(json));
 }
 
-createRollTable(data, 'Test', 2);
+function generateTable() {
+    new Dialog(
+        {
+            title: 'Generate new table.',
+            content: `
+            <div>
+                <label for="tableName">Name of the Table</label>
+                <input id="tableName" type="text" name="tableName"></input>
+            </div>
+            <div>
+            <label for="rangeMultiplyer">Range Multiplyer</label>
+                <input id="rangeMultiplyer" type="text" name="rangeMultiplyer"></input>
+            </div>
+            <div>
+                <label for="tableData">CSV</label>
+                <textarea
+                    id="tableData"
+                    name="tableData"
+                    rows="10"
+                    style="resize:none"
+                ></textarea>
+            </div>`,
+            buttons: {
+                yes: {
+                    icon: '<i class="fas fa-save"></i>',
+                    label: 'Save Table',
+                    callback: (html) => {
+                        const tableName = html.find('input[name="tableName"]').val() || 'TempName';
+                        const rangeMultiplyer = html.find('input[name="rangeMultiplyer"]').val() || 1;
+                        let tableData = html.find('textarea[name="tableData"]').val();
+
+                        tableData = tableData.split(',');
+
+                        createRollTable(tableData, tableName, rangeMultiplyer);
+                    }
+                },
+                no: {
+                    icon: '<i class="fas fa-ban"></i>',
+                    label: 'Cancel'
+                },
+            },
+            default: 'yes'
+        }
+    ).render(true);
+}
+
+generateTable();
