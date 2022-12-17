@@ -1,5 +1,36 @@
 // CONFIG.debug.hooks = true;
 
+const genders = [
+    {
+        sign: 'M',
+        pronoun: 'His',
+    },
+    {
+        sign: 'F',
+        pronoun: 'Her',
+    },
+    // {
+    //     sign: 'N',
+    //     pronoun: 'Their',
+    // }
+];
+
+/**
+ * Convert string to camel case.
+ *
+ * @param {string} str 
+ * @returns string
+ */
+function toCamelCase(str) {
+    return str.replace(
+        /(?:^\w|[A-Z]|\b\w)/g,
+        function(word, index) {
+            return index === 0 ? word.toLowerCase() : word.toUpperCase();
+        }
+    )
+    .replace(/\s+/g, '');
+  }
+
 /**
  * Returns a RollTable with the requested name.
  *
@@ -24,9 +55,9 @@ function findTable(tableName) {
 async function rollOnTable(rollTable, firstRoll = true) {
     const { results } = await rollTable.roll();
 
-    let result = results[0].data.text;
+    let result = results[0].text;
 
-    if (_.camelCase(result) === 'rollTwice') {
+    if (toCamelCase(result) === 'rollTwice') {
         const firstGoal = await rollOnTable(rollTable, false);
         const secondGoal = await rollOnTable(rollTable, false);
 
@@ -58,18 +89,18 @@ function printMessage(message) {
     );
 }
 
-function linkGenerator({ data }) {
+function linkGenerator(data) {
     return `@${data.collection}[${data.resultId}]{${data.text}}`
 }
 
-function image({ data }) {
+function image(data) {
     const side = '40px';
 
     return `<img src="${data.img}" alt="${data.text}" width="${side}" height="${side}">`
 }
 
 function npcHtml(npc) {
-    const pronoun = npc.gender === 'M' ? 'His' : 'Her';
+    const pronoun = npc.gender.pronoun;
 
     const strong = (string) => {
         return `<strong>${string}</strong>`;
@@ -78,7 +109,7 @@ function npcHtml(npc) {
     const startsWithVowel = function (word) {
         return ['a', 'e', 'i', 'o', 'u'].some(
             (vowel) => {
-                word = _.lowerCase(word);
+                word = word.toLowerCase();
 
                 return word.startsWith(vowel);
             }
@@ -101,7 +132,7 @@ function npcHtml(npc) {
         </h1>
         <p>
             <em>
-                ${npc.difficulty} <small>(${npc.gender})</small>
+                ${npc.difficulty} <small>(${npc.gender.sign})</small>
             </em>
         </p>
         <br>
@@ -133,12 +164,7 @@ async function generateNpc() {
     npc.role = await rollOnTable(findTable('Oracle: Character Role'));
     npc.goal = await rollOnTable(findTable('Oracle: Character Goal'));
     npc.disposition = await rollOnTable(findTable('Oracle: Character Disposition'));
-    npc.gender = _.sample(
-        [
-            'M',
-            'F'
-        ]
-    );
+    npc.gender = genders[Math.floor(Math.random() * genders.length)];
 
     printMessage(npcHtml(npc));
 

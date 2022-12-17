@@ -9,11 +9,10 @@
  *
  * @returns String
  */
-function selectBox(label, options, id) {
+ function selectBox(label, options, id) {
     let optionsHtml = '';
 
-    _.forEach(
-        options,
+    options.forEach(
         (option) => {
             optionsHtml += `<option value="${option}">${option}</option>`;
         }
@@ -49,6 +48,7 @@ function findTable(tableName) {
  * @returns TableResult
  */
 async function rollOnTable(tableName) {
+    console.dir(tableName);
     const rollTable = findTable(tableName);
 
     const { results } = await rollTable
@@ -70,7 +70,7 @@ function getSpecificTableResult(tableName, tableResultText) {
 
     return rollTable
         .results
-        .find(r => r.data.text = tableResultText);
+        .find(r => r.text = tableResultText);
 }
 
 /**
@@ -82,9 +82,8 @@ function getSpecificTableResult(tableName, tableResultText) {
  */
 function getTableResultTexts(tableName) {
     return findTable(tableNames.domain)
-        .data
         .results
-        .map(r => r.data.text);
+        .map(r => r.text);
 }
 
 /**
@@ -141,8 +140,7 @@ function printSite(actor) {
 function itemData(name) {
     return game
         .items
-        .find(i => i.name === name)
-        .data;
+        .find(i => i.name === name);
 }
 
 /**
@@ -153,7 +151,7 @@ function itemData(name) {
  * @returns String
  */
 async function generateSiteName(domainName) {
-    const { data: format } = await rollOnTable(tableNames.siteNameFormat);
+    const format = await rollOnTable(tableNames.siteNameFormat);
 
     let name = format.text;
 
@@ -166,7 +164,7 @@ async function generateSiteName(domainName) {
             tableName = 'Place-' + domainName;
         }
 
-        const { data: value } = await rollOnTable(tableNames.siteNameDefault + tableName);
+        const value = await rollOnTable(tableNames.siteNameDefault + tableName);
 
         name = name.replace(
             table,
@@ -184,8 +182,8 @@ async function saveSite(site) {
             type: 'site',
             img: site.domain.icon,
             items: [
-                itemData(site.theme.data.text),
-                itemData(site.domain.data.text)
+                itemData(site.theme.text),
+                itemData(site.domain.text)
             ]
         }
     );
@@ -208,9 +206,9 @@ async function generateSite(domainName) {
     }
 
     site.theme = await rollOnTable(tableNames.theme);
-    site.name = await generateSiteName(site.domain.data.text);
+    site.name = await generateSiteName(site.domain.text);
 
-    printMessage(`<strong>${site.name}:</strong> ${site.theme.data.text} ${site.domain.data.text}`);
+    printMessage(`<strong>${site.name}:</strong> ${site.theme.text} ${site.domain.text}`);
 
     new Dialog(
         {

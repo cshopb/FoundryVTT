@@ -24,7 +24,7 @@ async function rollOnTable(tableName) {
     const { results } = await rollTable
         .roll();
 
-    return results[0].data.text;
+    return results[0].text;
 }
 
 /**
